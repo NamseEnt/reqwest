@@ -1,34 +1,10 @@
 use http::header::USER_AGENT;
 use http::{HeaderMap, HeaderValue, Method};
-use js_sys::{Promise, JSON};
 use std::convert::TryInto;
 use std::{fmt, future::Future, sync::Arc};
-use url::Url;
-use wasm_bindgen::prelude::{wasm_bindgen, UnwrapThrowExt as _};
 
-use super::{AbortGuard, Request, RequestBuilder, Response};
+use super::{Request, RequestBuilder, Response};
 use crate::IntoUrl;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_name = fetch)]
-    fn fetch_with_request(input: &web_sys::Request) -> Promise;
-}
-
-fn js_fetch(req: &web_sys::Request) -> Promise {
-    use wasm_bindgen::{JsCast, JsValue};
-    let global = js_sys::global();
-
-    if let Ok(true) = js_sys::Reflect::has(&global, &JsValue::from_str("ServiceWorkerGlobalScope"))
-    {
-        global
-            .unchecked_into::<web_sys::ServiceWorkerGlobalScope>()
-            .fetch_with_request(req)
-    } else {
-        // browser
-        fetch_with_request(req)
-    }
-}
 
 /// dox
 #[derive(Clone)]
@@ -44,7 +20,7 @@ pub struct ClientBuilder {
 impl Client {
     /// dox
     pub fn new() -> Self {
-        Client::builder().build().unwrap_throw()
+        Client::builder().build().unwrap()
     }
 
     /// dox
@@ -183,77 +159,78 @@ impl fmt::Debug for ClientBuilder {
 }
 
 async fn fetch(req: Request) -> crate::Result<Response> {
-    // Build the js Request
-    let mut init = web_sys::RequestInit::new();
-    init.method(req.method().as_str());
+    todo!()
+    // // Build the js Request
+    // let mut init = web_sys::RequestInit::new();
+    // init.method(req.method().as_str());
 
-    // convert HeaderMap to Headers
-    let js_headers = web_sys::Headers::new()
-        .map_err(crate::error::wasm)
-        .map_err(crate::error::builder)?;
+    // // convert HeaderMap to Headers
+    // let js_headers = web_sys::Headers::new()
+    //     .map_err(crate::error::wasm)
+    //     .map_err(crate::error::builder)?;
 
-    for (name, value) in req.headers() {
-        js_headers
-            .append(
-                name.as_str(),
-                value.to_str().map_err(crate::error::builder)?,
-            )
-            .map_err(crate::error::wasm)
-            .map_err(crate::error::builder)?;
-    }
-    init.headers(&js_headers.into());
+    // for (name, value) in req.headers() {
+    //     js_headers
+    //         .append(
+    //             name.as_str(),
+    //             value.to_str().map_err(crate::error::builder)?,
+    //         )
+    //         .map_err(crate::error::wasm)
+    //         .map_err(crate::error::builder)?;
+    // }
+    // init.headers(&js_headers.into());
 
-    // When req.cors is true, do nothing because the default mode is 'cors'
-    if !req.cors {
-        init.mode(web_sys::RequestMode::NoCors);
-    }
+    // // When req.cors is true, do nothing because the default mode is 'cors'
+    // if !req.cors {
+    //     init.mode(web_sys::RequestMode::NoCors);
+    // }
 
-    if let Some(creds) = req.credentials {
-        init.credentials(creds);
-    }
+    // if let Some(creds) = req.credentials {
+    //     init.credentials(creds);
+    // }
 
-    if let Some(body) = req.body() {
-        if !body.is_empty() {
-            init.body(Some(body.to_js_value()?.as_ref()));
-        }
-    }
+    // if let Some(body) = req.body() {
+    //     if !body.is_empty() {
+    //         init.body(Some(body.to_js_value()?.as_ref()));
+    //     }
+    // }
 
-    let abort = AbortGuard::new()?;
-    init.signal(Some(&abort.signal()));
+    // let abort = AbortGuard::new()?;
+    // init.signal(Some(&abort.signal()));
 
-    let js_req = web_sys::Request::new_with_str_and_init(req.url().as_str(), &init)
-        .map_err(crate::error::wasm)
-        .map_err(crate::error::builder)?;
+    // let js_req = web_sys::Request::new_with_str_and_init(req.url().as_str(), &init)
+    //     .map_err(crate::error::wasm)
+    //     .map_err(crate::error::builder)?;
 
-    // Await the fetch() promise
-    let p = js_fetch(&js_req);
-    let js_resp = super::promise::<web_sys::Response>(p)
-        .await
-        .map_err(crate::error::request)?;
+    // // Await the fetch() promise
+    // let p = js_fetch(&js_req);
+    // let js_resp = super::promise::<web_sys::Response>(p)
+    //     .await
+    //     .map_err(crate::error::request)?;
 
-    // Convert from the js Response
-    let mut resp = http::Response::builder().status(js_resp.status());
+    // // Convert from the js Response
+    // let mut resp = http::Response::builder().status(js_resp.status());
 
-    let url = Url::parse(&js_resp.url()).expect_throw("url parse");
+    // let url = Url::parse(&js_resp.url()).expect_throw("url parse");
 
-    let js_headers = js_resp.headers();
-    let js_iter = js_sys::try_iter(&js_headers)
-        .expect_throw("headers try_iter")
-        .expect_throw("headers have an iterator");
+    // let js_headers = js_resp.headers();
+    // let js_iter = js_sys::try_iter(&js_headers)
+    //     .expect_throw("headers try_iter")
+    //     .expect_throw("headers have an iterator");
 
-    for item in js_iter {
-        let item = item.expect_throw("headers iterator doesn't throw");
-        let serialized_headers: String = JSON::stringify(&item)
-            .expect_throw("serialized headers")
-            .into();
-        let [name, value]: [String; 2] = serde_json::from_str(&serialized_headers)
-            .expect_throw("deserializable serialized headers");
-        resp = resp.header(&name, &value);
-    }
+    // for item in js_iter {
+    //     let item = item.expect_throw("headers iterator doesn't throw");
+    //     let serialized_headers: String = JSON::stringify(&item)
+    //         .expect_throw("serialized headers")
+    //         .into();
+    //     let [name, value]: [String; 2] = serde_json::from_str(&serialized_headers)
+    //         .expect_throw("deserializable serialized headers");
+    //     resp = resp.header(&name, &value);
+    // }
 
-    resp.body(js_resp)
-        .map(|resp| Response::new(resp, url, abort))
-        .map_err(crate::error::request)
+    // resp.body(js_resp)
+    //     .map(|resp| Response::new(resp, url, abort))
+    //     .map_err(crate::error::request)
 }
 
 // ===== impl ClientBuilder =====
@@ -328,120 +305,5 @@ impl Default for Config {
 impl Config {
     fn fmt_fields(&self, f: &mut fmt::DebugStruct<'_, '_>) {
         f.field("default_headers", &self.headers);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
-
-    #[wasm_bindgen_test]
-    async fn default_headers() {
-        use crate::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        headers.insert("x-custom", HeaderValue::from_static("flibbertigibbet"));
-        let client = crate::Client::builder()
-            .default_headers(headers)
-            .build()
-            .expect("client");
-        let mut req = client
-            .get("https://www.example.com")
-            .build()
-            .expect("request");
-        // merge headers as if client were about to issue fetch
-        client.merge_headers(&mut req);
-
-        let test_headers = req.headers();
-        assert!(test_headers.get(CONTENT_TYPE).is_some(), "content-type");
-        assert!(test_headers.get("x-custom").is_some(), "custom header");
-        assert!(test_headers.get("accept").is_none(), "no accept header");
-    }
-
-    #[wasm_bindgen_test]
-    async fn default_headers_clone() {
-        use crate::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        headers.insert("x-custom", HeaderValue::from_static("flibbertigibbet"));
-        let client = crate::Client::builder()
-            .default_headers(headers)
-            .build()
-            .expect("client");
-
-        let mut req = client
-            .get("https://www.example.com")
-            .header(CONTENT_TYPE, "text/plain")
-            .build()
-            .expect("request");
-        client.merge_headers(&mut req);
-        let headers1 = req.headers();
-
-        // confirm that request headers override defaults
-        assert_eq!(
-            headers1.get(CONTENT_TYPE).unwrap(),
-            "text/plain",
-            "request headers override defaults"
-        );
-
-        // confirm that request headers don't change client defaults
-        let mut req2 = client
-            .get("https://www.example.com/x")
-            .build()
-            .expect("req 2");
-        client.merge_headers(&mut req2);
-        let headers2 = req2.headers();
-        assert_eq!(
-            headers2.get(CONTENT_TYPE).unwrap(),
-            "application/json",
-            "request headers don't change client defaults"
-        );
-    }
-
-    #[wasm_bindgen_test]
-    fn user_agent_header() {
-        use crate::header::USER_AGENT;
-
-        let client = crate::Client::builder()
-            .user_agent("FooBar/1.2.3")
-            .build()
-            .expect("client");
-
-        let mut req = client
-            .get("https://www.example.com")
-            .build()
-            .expect("request");
-
-        // Merge the client headers with the request's one.
-        client.merge_headers(&mut req);
-        let headers1 = req.headers();
-
-        // Confirm that we have the `User-Agent` header set
-        assert_eq!(
-            headers1.get(USER_AGENT).unwrap(),
-            "FooBar/1.2.3",
-            "The user-agent header was not set: {req:#?}"
-        );
-
-        // Now we try to overwrite the `User-Agent` value
-
-        let mut req2 = client
-            .get("https://www.example.com")
-            .header(USER_AGENT, "Another-User-Agent/42")
-            .build()
-            .expect("request 2");
-
-        client.merge_headers(&mut req2);
-        let headers2 = req2.headers();
-
-        assert_eq!(
-            headers2.get(USER_AGENT).expect("headers2 user agent"),
-            "Another-User-Agent/42",
-            "Was not able to overwrite the User-Agent value on the request-builder"
-        );
     }
 }

@@ -63,7 +63,7 @@ impl<'a> IntoUrlSealed for &'a String {
     }
 }
 
-impl<'a> IntoUrlSealed for String {
+impl IntoUrlSealed for String {
     fn into_url(self) -> crate::Result<Url> {
         (&*self).into_url()
     }
@@ -102,16 +102,5 @@ mod tests {
             err.source().unwrap().to_string(),
             "URL scheme is not allowed"
         );
-    }
-
-    if_wasm! {
-        use wasm_bindgen_test::*;
-
-        #[wasm_bindgen_test]
-        fn into_url_blob_scheme_wasm() {
-            let url = "blob:http://example.com".into_url().unwrap();
-
-            assert_eq!(url.as_str(), "blob:http://example.com");
-        }
     }
 }

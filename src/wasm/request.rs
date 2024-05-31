@@ -7,7 +7,6 @@ use serde::Serialize;
 #[cfg(feature = "json")]
 use serde_json;
 use url::Url;
-use web_sys::RequestCredentials;
 
 use super::{Body, Client, Response};
 use crate::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE};
@@ -19,7 +18,7 @@ pub struct Request {
     headers: HeaderMap,
     body: Option<Body>,
     pub(super) cors: bool,
-    pub(super) credentials: Option<RequestCredentials>,
+    pub(super) credentials: Option<&'static str>,
 }
 
 /// A builder to construct the properties of a `Request`.
@@ -306,7 +305,7 @@ impl RequestBuilder {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Request/credentials
     pub fn fetch_credentials_same_origin(mut self) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.credentials = Some(RequestCredentials::SameOrigin);
+            req.credentials = Some("same-origin");
         }
         self
     }
@@ -322,7 +321,7 @@ impl RequestBuilder {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Request/credentials
     pub fn fetch_credentials_include(mut self) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.credentials = Some(RequestCredentials::Include);
+            req.credentials = Some("include");
         }
         self
     }
@@ -338,7 +337,7 @@ impl RequestBuilder {
     /// [mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Request/credentials
     pub fn fetch_credentials_omit(mut self) -> RequestBuilder {
         if let Ok(ref mut req) = self.request {
-            req.credentials = Some(RequestCredentials::Omit);
+            req.credentials = Some("omit");
         }
         self
     }

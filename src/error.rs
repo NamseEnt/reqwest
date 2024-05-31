@@ -216,20 +216,6 @@ impl StdError for Error {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-impl From<crate::error::Error> for wasm_bindgen::JsValue {
-    fn from(err: Error) -> wasm_bindgen::JsValue {
-        js_sys::Error::from(err).into()
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-impl From<crate::error::Error> for js_sys::Error {
-    fn from(err: Error) -> js_sys::Error {
-        js_sys::Error::new(&format!("{err}"))
-    }
-}
-
 #[derive(Debug)]
 pub(crate) enum Kind {
     Builder,
@@ -273,12 +259,6 @@ pub(crate) fn url_bad_scheme(url: Url) -> Error {
 
 pub(crate) fn url_invalid_uri(url: Url) -> Error {
     Error::new(Kind::Builder, Some("Parsed Url is not a valid Uri")).with_url(url)
-}
-
-if_wasm! {
-    pub(crate) fn wasm(js_val: wasm_bindgen::JsValue) -> BoxError {
-        format!("{js_val:?}").into()
-    }
 }
 
 pub(crate) fn upgrade<E: Into<BoxError>>(e: E) -> Error {
