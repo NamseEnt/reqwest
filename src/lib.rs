@@ -1,3 +1,4 @@
+#![allow(warnings)]
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
